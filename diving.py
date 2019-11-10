@@ -2,8 +2,6 @@
 import urllib.request
 # Reading JSON
 import json
-# And storing output in database
-import pymongo
 
 
 # Perform API GET request
@@ -12,33 +10,29 @@ def get_diving_data(url):
     data = response.read().decode("ISO-8859-1")
     return json.loads(data)
 
+# Output each site to an individual json file
+def write_to_file(site):
+    file_name = (site["lat"] + "," + site["lng"])
+    out = json.dumps(site)
+    f = open(file_name + ".json", "w")
+    f.write(out)
+    f.close()
+
 
 def main():
-    # Connect to database
-    myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-    mydb = myclient["diving_location_db"]
-    mycol = mydb["location"]
-
     # Define API information
-    url = 'http://api.divesites.com/?mode=sites&lat=50.3352&lng=-4.1485&dist=2500000000000000000000'
+    url = 'http://api.divesites.com/?mode=sites&lat=50.3352&lng=-4.1485&dist=10'
 
     # Retrieve only diving site locations
     diving_site_array = get_diving_data(url)['sites']
 
     # Trim useless data from array
-    for location in diving_site_array:
+    for site in diving_site_array:
         for i in ["id", "currents", "distance", "hazards", "mindepth", "maxdepth", "equipment", "description",
                   "predive", "marinelife", "water"]:
-            location.pop(i)
+            site.pop(i)
 
-        # -----Used to view output-----
-        '''
-        for key in (location.keys()):
-            print("%s: %s" % (key, location[key]))
-        '''
-
-        # Output each location to database
-        x = mycol.insert_one(location)
+            write_to_file(site)
 
 
 # Start program from main()
